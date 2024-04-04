@@ -12,3 +12,54 @@ from nltk import word_tokenize                                 # to create token
 from nltk.corpus import stopwords                              # for stop words
 df = pd.read_csv(path_to_csv, nrows = 20)
 df.head()
+
+s = 'tell me about your personality'
+words = word_tokenize(s)                    # tokenize words
+print(words)
+
+def text_normalization(text):
+    text = str(text).lower()                        # text to lower case
+    spl_char_text = re.sub(r'[^ a-z]','',text)      # removing special characters
+    tokens = nltk.word_tokenize(spl_char_text)      # word tokenizing
+    lema = wordnet.WordNetLemmatizer()              # intializing lemmatization
+    tags_list = pos_tag(tokens,tagset=None)         # parts of speech
+    lema_words = []                                 # empty list 
+    for token,pos_token in tags_list:               # lemmatize according to POS
+        if pos_token.startswith('V'):               # Verb
+            pos_val = 'v'
+        elif pos_token.startswith('J'):             # Adjective
+            pos_val = 'a'
+        elif pos_token.startswith('R'):             # Adverb
+            pos_val = 'r'
+        else:
+            pos_val = 'n'                           # Noun
+        lema_token = lema.lemmatize(token,pos_val)
+
+        if lema_token in stop: 
+          lema_words.append(lema_token)             # appending the lemmatized token into a list
+    
+    return " ".join(lema_words) 
+
+
+def chat_bow(text):
+    lemma = text_normalization(text) # calling the function to perform text normalization
+    bow = cv.transform([lemma]).toarray() # applying bow
+    cosine_value = 1- pairwise_distances(df_bow,bow, metric = 'cosine' )
+    index_value = cosine_value.argmax() # getting index value 
+    return df['Answers'].loc[index_value]
+chat_bow('can you prevent mental health problems')
+#'When healing from mental illness, early identification and treatment are of vital importance. '
+
+chat_bow('what is mental health')
+#'Different treatment options are available for individuals with mental illness.'
+
+chat_bow('are there cures for mental health problems')
+#'Different treatment options are available for individuals with mental illness.'
+
+chat_bow('how do I know if i am unwell')
+#'Create a plan for switching to a different treatment that will be a better fit.'
+
+chat_bow('what do you mean by mental health')
+#"Mental illnesses are health conditions that disrupt a person's thoughts, emotions, relationships, and daily functioning."
+
+
