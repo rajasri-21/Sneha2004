@@ -21,10 +21,10 @@ data = {'Questions': ['Can you prevent mental health problems?',
                       'Are there cures for mental health problems?',
                       'How do I know if I am unwell?',
                       'What do you mean by mental health?'],
-        'Answers': ['Answer 1',
-                    'Answer 2',
-                    'Answer 3',
-                    'Answer 4',
+        'Answers': ['Yes! We can prevent mental health problems',
+                    'Mental health encompasses our emotional, psychological, and social well-being. It profoundly influences our thoughts, feelings, behaviors, and how we handle stress, interact with others, and make choices.',
+                    'Mental health disorders are often chronic conditions that require ongoing management and treatment rather than a one-time cure. However, various interventions, therapies, medications, and lifestyle changes can effectively manage symptoms and improve quality of life for individuals with mental health disorders. ',
+                    'Some signs and symptoms that may indicate you are struggling with your mental health such as Changes in mood,Changes in behavior,Physical symptoms,Difficulty concentrating,Fatigue or lack of energy,Changes in appetite or weight,Thoughts of self-harm or suicide,Substance abuse',
                     'Answer 5']}
 
 df = pd.DataFrame(data)
