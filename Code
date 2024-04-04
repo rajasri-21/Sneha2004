@@ -3,25 +3,43 @@ import nltk
 import numpy as np
 import re
 
-from nltk.stem import wordnet                                  # to perform lemmitization
-from sklearn.feature_extraction.text import CountVectorizer    # to perform bow
-from sklearn.feature_extraction.text import TfidfVectorizer    # to perform tfidf
-from nltk import pos_tag                                       # for parts of speech
-from sklearn.metrics import pairwise_distances                 # to perfrom cosine similarity
-from nltk import word_tokenize                                 # to create tokens
-from nltk.corpus import stopwords                              # for stop words
-df = pd.read_csv(path_to_csv, nrows = 20)
-df.head()
+from nltk.stem import WordNetLemmatizer                                  # to perform lemmatization
+from sklearn.feature_extraction.text import CountVectorizer              # to perform BOW
+from sklearn.metrics.pairwise import cosine_similarity                    # to perform cosine similarity
+from nltk import pos_tag                                                 # for parts of speech
+from nltk import word_tokenize                                           # to create tokens
+from nltk.corpus import stopwords                                        # for stop words
 
-s = 'tell me about your personality'
-words = word_tokenize(s)                    # tokenize words
-print(words)
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
+nltk.download('stopwords')
 
-def text_normalization(text):
+# Sample DataFrame containing questions and answers
+data = {'Questions': ['Can you prevent mental health problems?',
+                      'What is mental health?',
+                      'Are there cures for mental health problems?',
+                      'How do I know if I am unwell?',
+                      'What do you mean by mental health?'],
+        'Answers': ['Answer 1',
+                    'Answer 2',
+                    'Answer 3',
+                    'Answer 4',
+                    'Answer 5']}
+
+df = pd.DataFrame(data)
+
+# Initializing CountVectorizer with appropriate parameters
+cv = CountVectorizer()
+
+# Creating DataFrame (df_bow) from the Bag of Words (BOW) representation
+df_bow = cv.fit_transform(df['Questions']).toarray()
+
+def text_normalization(text, stop):
     text = str(text).lower()                        # text to lower case
     spl_char_text = re.sub(r'[^ a-z]','',text)      # removing special characters
     tokens = nltk.word_tokenize(spl_char_text)      # word tokenizing
-    lema = wordnet.WordNetLemmatizer()              # intializing lemmatization
+    lema = WordNetLemmatizer()                     # intializing lemmatization
     tags_list = pos_tag(tokens,tagset=None)         # parts of speech
     lema_words = []                                 # empty list 
     for token,pos_token in tags_list:               # lemmatize according to POS
@@ -35,31 +53,21 @@ def text_normalization(text):
             pos_val = 'n'                           # Noun
         lema_token = lema.lemmatize(token,pos_val)
 
-        if lema_token in stop: 
-          lema_words.append(lema_token)             # appending the lemmatized token into a list
+        if lema_token not in stop: 
+            lema_words.append(lema_token)           # appending the lemmatized token into a list
     
     return " ".join(lema_words) 
 
-
 def chat_bow(text):
-    lemma = text_normalization(text) # calling the function to perform text normalization
-    bow = cv.transform([lemma]).toarray() # applying bow
-    cosine_value = 1- pairwise_distances(df_bow,bow, metric = 'cosine' )
-    index_value = cosine_value.argmax() # getting index value 
-    return df['Answers'].loc[index_value]
-chat_bow('can you prevent mental health problems')
-#'When healing from mental illness, early identification and treatment are of vital importance. '
+    stop = set(stopwords.words('english'))         # Initializing stopwords
+    lemma = text_normalization(text, stop)        # calling the function to perform text normalization
+    bow = cv.transform([lemma]).toarray()         # applying BOW
+    cosine_value = cosine_similarity(df_bow, bow) # calculating cosine similarity
+    index_value = cosine_value.argmax()           # getting index value 
+    return df['Answers'].loc[index_value]         # return corresponding answer
 
-chat_bow('what is mental health')
-#'Different treatment options are available for individuals with mental illness.'
-
-chat_bow('are there cures for mental health problems')
-#'Different treatment options are available for individuals with mental illness.'
-
-chat_bow('how do I know if i am unwell')
-#'Create a plan for switching to a different treatment that will be a better fit.'
-
-chat_bow('what do you mean by mental health')
-#"Mental illnesses are health conditions that disrupt a person's thoughts, emotions, relationships, and daily functioning."
-
-
+print(chat_bow('Can you prevent mental health problems?'))
+print(chat_bow('What is mental health?'))
+print(chat_bow('Are there cures for mental health problems?'))
+print(chat_bow('How do I know if I am unwell?'))
+print(chat_bow('What do you mean by mental health?'))
