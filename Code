@@ -1,0 +1,92 @@
+import pandas as pd
+import nltk 
+import numpy as np
+import re
+
+from nltk.stem import wordnet                                  
+from sklearn.feature_extraction.text import CountVectorizer    
+from sklearn.feature_extraction.text import TfidfVectorizer    
+from nltk import pos_tag                                       
+from sklearn.metrics import pairwise_distances                 
+from nltk import word_tokenize                                 
+from nltk.corpus import stopwords
+
+df = pd.read_csv(path_to_csv, nrows = 20)
+df.head()
+df.isnull().sum()
+s = 'tell me about your personality'
+words = word_tokenize(s)                    # tokenize words
+print(words)
+
+lemma = wordnet.WordNetLemmatizer()         
+lemma.lemmatize('absorbed', pos = 'v')
+pos_tag(nltk.word_tokenize(s),tagset = None) 
+nltk.download('stopwords')            # uncomment if running the cell for the first time
+
+stop = stopwords.words('english')
+print(stop)
+
+def text_normalization(text):
+    text = str(text).lower()                        # text to lower case
+    spl_char_text = re.sub(r'[^ a-z]','',text)      # removing special characters
+    tokens = nltk.word_tokenize(spl_char_text)      # word tokenizing
+    lema = wordnet.WordNetLemmatizer()              # intializing lemmatization
+    tags_list = pos_tag(tokens,tagset=None)         # parts of speech
+    lema_words = []                                 # empty list 
+    for token,pos_token in tags_list:               # lemmatize according to POS
+        if pos_token.startswith('V'):               # Verb
+            pos_val = 'v'
+        elif pos_token.startswith('J'):             # Adjective
+            pos_val = 'a'
+        elif pos_token.startswith('R'):             # Adverb
+            pos_val = 'r'
+        else:
+            pos_val = 'n'                           # Noun
+        lema_token = lema.lemmatize(token,pos_val)
+
+        if lema_token in stop: 
+          lema_words.append(lema_token)             # appending the lemmatized token into a list
+    
+    return " ".join(lema_words) 
+text_normalization('telling you some stuffs about me') 
+
+df['lemmatized_text'] = df['Questions'].apply(text_normalization)   # clean text
+df.head(5)
+
+cv = CountVectorizer()                                  # intializing the count vectorizer
+X = cv.fit_transform(df['lemmatized_text']).toarray()
+# returns all the unique word from data 
+
+features = cv.get_feature_names_out()
+df_bow = pd.DataFrame(X, columns = features)
+df_bow.head()
+Question = 'What treatment options are available'                           # example
+Question_lemma = text_normalization(Question)                               # clean text
+Question_bow = cv.transform([Question_lemma]).toarray()                     # applying bow
+
+cosine_value = 1- pairwise_distances(df_bow, Question_bow, metric = 'cosine' )
+(cosine_value)
+
+df['similarity_bow'] = cosine_value                                         # create cosine value as a new column
+simiscores = pd.DataFrame(df, columns=['Answers','similarity_bow'])         # taking similarity value of responses for the question we took
+simiscores
+
+simscoresDescending = simiscores.sort_values(by = 'similarity_bow', ascending=False)          # sorting the values
+simscoresDescending.head()
+
+
+#Testing chatbot
+def chat_bow(text):
+    lemma = text_normalization(text) # calling the function to perform text normalization
+    bow = cv.transform([lemma]).toarray() # applying bow
+    cosine_value = 1- pairwise_distances(df_bow,bow, metric = 'cosine' )
+    index_value = cosine_value.argmax() # getting index value 
+    return df['Answers'].loc[index_value]
+
+chat_bow('can you prevent mental health problems')
+chat_bow('what is mental health')
+chat_bow('are there cures for mental health problems')
+chat_bow('how do I know if i am unwell')
+chat_bow('what do you mean by mental health')
+
+
